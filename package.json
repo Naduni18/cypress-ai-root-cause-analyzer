@@ -1,0 +1,24 @@
+{
+  "name": "cypress-ai-root-cause-analyzer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "analyze:failures": "node scripts/analyze-failures.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "cypress": "^15.18.0",
+    "mocha-junit-reporter": "^2.2.1"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "glob": "^13.0.6",
+    "openai": "^6.45.0"
+  }
+}

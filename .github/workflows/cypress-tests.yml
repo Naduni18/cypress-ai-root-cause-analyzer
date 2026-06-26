@@ -1,0 +1,51 @@
+name: Cypress Tests With AI Failure Analysis
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  cypress:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Cypress tests
+        id: cypress
+        continue-on-error: true
+        run: |
+          npm run cy:run 2>&1 | tee cypress-run.log
+
+      - name: Analyze failed tests with AI
+        if: steps.cypress.outcome == 'failure'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AI_MODEL: gpt-4.1
+        run: npm run analyze:failures
+
+      - name: Upload Cypress artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-artifacts
+          path: |
+            cypress/screenshots
+            cypress/videos
+            cypress/results
+            cypress-run.log
+            ai-analysis
+
+      - name: Fail job if Cypress failed
+        if: steps.cypress.outcome == 'failure'
+        run: exit 1
