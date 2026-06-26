@@ -5,7 +5,7 @@ describe("ExpandTesting login page", () => {
 
   it("logs in successfully with valid credentials", () => {
     cy.get("#username").should("be.visible").type("practice");
-    cy.get("#password").should("be.visible").type("SuperSePassword!");
+    cy.get("#password").should("be.visible").type("SuperSessword!");
     cy.get("button[type='submit']").click();
 
     cy.location("pathname").should("eq", "/secure");
