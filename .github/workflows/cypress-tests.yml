@@ -23,12 +23,23 @@ jobs:
 
       - name: Run Cypress tests
         id: cypress
-        continue-on-error: true
         run: |
+          set +e
           npm run cy:run 2>&1 | tee cypress-run.log
+          CYPRESS_EXIT_CODE=${PIPESTATUS[0]}
+
+          echo "exit_code=$CYPRESS_EXIT_CODE" >> "$GITHUB_OUTPUT"
+
+          if [ "$CYPRESS_EXIT_CODE" -ne 0 ]; then
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "failed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          exit 0
 
       - name: Analyze failed tests with AI
-        if: steps.cypress.outcome == 'failure'
+        if: steps.cypress.outputs.failed == 'true'
         id: ai-analysis
         continue-on-error: true
         env:
@@ -36,8 +47,8 @@ jobs:
           AI_MODEL: gpt-4.1
         run: npm run analyze:failures
 
-      - name: Ensure AI analysis file exists
-        if: always()
+      - name: Ensure AI analysis file exists for failed tests
+        if: steps.cypress.outputs.failed == 'true'
         run: |
           mkdir -p ai-analysis
           if [ ! -f ai-analysis/root-cause-analysis.json ]; then
@@ -70,5 +81,5 @@ jobs:
             ai-analysis/root-cause-analysis.json
 
       - name: Fail job if Cypress failed
-        if: steps.cypress.outcome == 'failure'
+        if: steps.cypress.outputs.failed == 'true'
         run: exit 1
