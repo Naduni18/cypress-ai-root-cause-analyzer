@@ -29,22 +29,45 @@ jobs:
 
       - name: Analyze failed tests with AI
         if: steps.cypress.outcome == 'failure'
+        id: ai-analysis
+        continue-on-error: true
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           AI_MODEL: gpt-4.1
         run: npm run analyze:failures
 
-      - name: Upload Cypress artifacts
+      - name: Ensure AI analysis file exists
+        if: always()
+        run: |
+          mkdir -p ai-analysis
+          if [ ! -f ai-analysis/root-cause-analysis.json ]; then
+            cat > ai-analysis/root-cause-analysis.json <<'JSON'
+          {
+            "likely_reason_for_failure": "AI analysis was not generated.",
+            "classification": "unknown",
+            "confidence": 0,
+            "evidence": [
+              "The file ai-analysis/root-cause-analysis.json did not exist before artifact upload.",
+              "This can happen when Cypress passed, the analyzer step was skipped, OPENAI_API_KEY was missing, or the analyzer failed."
+            ],
+            "suggested_fix": "If Cypress failed, check the Analyze failed tests with AI step logs and confirm OPENAI_API_KEY is configured in GitHub Actions secrets.",
+            "suggested_owner": "Needs triage"
+          }
+          JSON
+          fi
+
+      - name: Upload Cypress and AI artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-artifacts
+          name: cypress-ai-artifacts
+          if-no-files-found: warn
           path: |
             cypress/screenshots
             cypress/videos
             cypress/results
             cypress-run.log
-            ai-analysis
+            ai-analysis/root-cause-analysis.json
 
       - name: Fail job if Cypress failed
         if: steps.cypress.outcome == 'failure'
